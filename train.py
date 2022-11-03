@@ -30,13 +30,15 @@ def log_print(text, color=None, on_color=None, attrs=None):
 
 
 method = 'mcnn'
-dataset_name = 'shtechA'
+dataset_name = 'dronebirds'
 output_dir = './saved_models/'
 
-train_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/train'
-train_gt_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/train_den'
-val_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val'
-val_gt_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val_den'
+# train_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/train'
+# train_gt_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/train_den'
+# val_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val'
+# val_gt_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val_den'
+
+data_path = '../../ds/dronebirds'
 
 #training configuration
 start_step = 0
@@ -92,8 +94,8 @@ re_cnt = False
 t = Timer()
 t.tic()
 
-data_loader = ImageDataLoader(train_path, train_gt_path, shuffle=True, gt_downsample=True, pre_load=True)
-data_loader_val = ImageDataLoader(val_path, val_gt_path, shuffle=False, gt_downsample=True, pre_load=True)
+data_loader = ImageDataLoader(os.path.join(data_path, 'train.json'), shuffle=True, gt_downsample=True, pre_load=False)
+data_loader_val = ImageDataLoader(os.path.join(data_path, 'val.json'), shuffle=False, gt_downsample=True, pre_load=False)
 best_mae = sys.maxint
 
 for epoch in range(start_step, end_step+1):    
