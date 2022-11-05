@@ -121,8 +121,8 @@ for epoch in range(start_step, end_step+1):
             density_map = density_map.data.cpu().numpy()
             et_count = np.sum(density_map)
             utils.save_results(im_data,gt_data,density_map, output_dir)
-            print('epoch: {:4d}, step {:4d}, Time: {:.4f}s, gt_cnt: {:4.1f}, et_cnt: {:4.1f}'.format(epoch,
-                step, 1./fps, gt_count,et_count))
+            print('\repoch: {:4d}, step {:4d}, Time: {:.4f}s, gt_cnt: {:4.1f}, et_cnt: {:4.1f}'.format(epoch,
+                step, 1./fps, gt_count,et_count), end='')
             # log_text = 'epoch: %4d, step %4d, Time: %.4fs, gt_cnt: %4.1f, et_cnt: %4.1f' % (epoch,
             #     step, 1./fps, gt_count,et_count)
             # log_print(log_text, color='green', attrs=['bold'])

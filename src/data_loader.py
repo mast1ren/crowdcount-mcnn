@@ -44,7 +44,7 @@ class ImageDataLoader():
                 img = cv2.resize(img,(wd_1,ht_1))
                 img = img.reshape((1,1,img.shape[0],img.shape[1]))
                 den = h5py.File(fname.replace('data', 'annotation').replace('jpg', 'h5'), 'r')['density'][:]
-                den = cv2.resize(den, (den.shape[1]*2, den.shape[0]*2), interpolation=cv2.INTER_CUBIC)//4
+                # den = cv2.resize(den, (den.shape[1]*2, den.shape[0]*2), interpolation=cv2.INTER_CUBIC)//4
 
                 # den = pd.read_csv(os.path.join(self.gt_path,os.path.splitext(fname)[0] + '.csv'), sep=',',header=None).as_matrix()                        
                 den  = den.astype(np.float32, copy=False)
@@ -93,21 +93,24 @@ class ImageDataLoader():
                 wd = img.shape[1]
                 ht_1 = int((ht/4)*4)
                 wd_1 = int((wd/4)*4)
-                img = cv2.resize(img,(wd_1,ht_1))
+                # img = cv2.resize(img,(wd_1,ht_1))
                 # print(img.shape)
                 img = img.reshape((1,1,img.shape[0],img.shape[1]))
                 den = h5py.File(fname.replace('data', 'annotation').replace('jpg', 'h5'), 'r')['density'][:]
-                den = cv2.resize(den, (den.shape[1]*2, den.shape[0]*2), interpolation=cv2.INTER_CUBIC)//4
+                # print(np.sum(den))
                 # den = pd.read_csv(os.path.join(self.gt_path,os.path.splitext(fname)[0] + '.csv'), sep=',',header=None).as_matrix()                        
-                den  = den.astype(np.float32, copy=False)
+                # den  = den.astype(np.float32, copy=False)
                 if self.gt_downsample:
-                    wd_1 = int(wd_1/4)
-                    ht_1 = int(ht_1/4)
-                    den = cv2.resize(den,(wd_1,ht_1)) * ((wd*ht)/(wd_1*ht_1))
-                else:
-                    den = cv2.resize(den,(wd_1,ht_1)) * ((wd*ht)/(wd_1*ht_1))
-                    
-                den = den.reshape((1,1,den.shape[0],den.shape[1]))            
+                    wd_1 = int(den.shape[1]//2)
+                    ht_1 = int(den.shape[0]//2)
+                    den = cv2.resize(den,(wd_1,ht_1), interpolation=cv2.INTER_CUBIC) * 4
+                    # * ((wd*ht)/(wd_1*ht_1))
+                # else:
+                    # den = cv2.resize(den,(wd,ht), interpolation=cv2.INTER_CUBIC) * 4
+                    # ((wd*ht)/(wd_1*ht_1))
+                # print(np.sum(den))  
+                den = den.reshape((1,1,den.shape[0],den.shape[1]))
+                # print(np.sum(den))       
                 blob = {}
                 blob['data']=img
                 blob['gt_density']=den
