@@ -2,7 +2,7 @@ import os
 import torch
 import numpy as np
 import sys
-
+sys.path.append('./src')
 from src.crowd_count import CrowdCounter
 from src import network
 from src.data_loader import ImageDataLoader
@@ -38,14 +38,14 @@ output_dir = './saved_models/'
 # val_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val'
 # val_gt_path = './data/formatted_trainval/shanghaitech_part_A_patches_9/val_den'
 
-data_path = '../../ds/dronebirds'
+data_path = '../../ds/dronebird'
 
 #training configuration
 start_step = 0
 end_step = 2000
 lr = 0.00001
 momentum = 0.9
-disp_interval = 500
+disp_interval = 5
 log_interval = 250
 
 
@@ -61,12 +61,12 @@ if rand_seed is not None:
     np.random.seed(rand_seed)
     torch.manual_seed(rand_seed)
     torch.cuda.manual_seed(rand_seed)
-
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+device = torch.device("cuda:0")
 # load net
 net = CrowdCounter()
 network.weights_normal_init(net, dev=0.01)
-net.cuda()
+net.to(device)
 net.train()
 
 params = list(net.parameters())
@@ -96,7 +96,7 @@ t.tic()
 
 data_loader = ImageDataLoader(os.path.join(data_path, 'train.json'), shuffle=True, gt_downsample=True, pre_load=False)
 data_loader_val = ImageDataLoader(os.path.join(data_path, 'val.json'), shuffle=False, gt_downsample=True, pre_load=False)
-best_mae = sys.maxint
+best_mae = 100000
 
 for epoch in range(start_step, end_step+1):    
     step = -1
@@ -107,29 +107,32 @@ for epoch in range(start_step, end_step+1):
         gt_data = blob['gt_density']
         density_map = net(im_data, gt_data)
         loss = net.loss
-        train_loss += loss.data[0]
+        train_loss += loss.item()
         step_cnt += 1
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        
-        if step % disp_interval == 0:            
+        # print('\r[{}/{}]'.format(step, data_loader.num_samples),end='')
+        if step % disp_interval == 0:
+            # print()
             duration = t.toc(average=False)
             fps = step_cnt / duration
             gt_count = np.sum(gt_data)    
             density_map = density_map.data.cpu().numpy()
             et_count = np.sum(density_map)
             utils.save_results(im_data,gt_data,density_map, output_dir)
-            log_text = 'epoch: %4d, step %4d, Time: %.4fs, gt_cnt: %4.1f, et_cnt: %4.1f' % (epoch,
-                step, 1./fps, gt_count,et_count)
-            log_print(log_text, color='green', attrs=['bold'])
+            print('epoch: {:4d}, step {:4d}, Time: {:.4f}s, gt_cnt: {:4.1f}, et_cnt: {:4.1f}'.format(epoch,
+                step, 1./fps, gt_count,et_count))
+            # log_text = 'epoch: %4d, step %4d, Time: %.4fs, gt_cnt: %4.1f, et_cnt: %4.1f' % (epoch,
+            #     step, 1./fps, gt_count,et_count)
+            # log_print(log_text, color='green', attrs=['bold'])
             re_cnt = True    
     
        
         if re_cnt:                                
             t.tic()
             re_cnt = False
-
+    print()
     if (epoch % 2 == 0):
         save_name = os.path.join(output_dir, '{}_{}_{}.h5'.format(method,dataset_name,epoch))
         network.save_net(save_name, net)     
@@ -139,10 +142,12 @@ for epoch in range(start_step, end_step+1):
             best_mae = mae
             best_mse = mse
             best_model = '{}_{}_{}.h5'.format(method,dataset_name,epoch)
-        log_text = 'EPOCH: %d, MAE: %.1f, MSE: %0.1f' % (epoch,mae,mse)
-        log_print(log_text, color='green', attrs=['bold'])
-        log_text = 'BEST MAE: %0.1f, BEST MSE: %0.1f, BEST MODEL: %s' % (best_mae,best_mse, best_model)
-        log_print(log_text, color='green', attrs=['bold'])
+        print('EPOCH: {:d}, MAE: {:.1f}, MSE: {:0.1f}'.format(epoch, mae, mse))
+        # log_text = 'EPOCH: %d, MAE: %.1f, MSE: %0.1f' % (epoch,mae,mse)
+        # log_print(log_text, color='green', attrs=['bold'])
+        print('BEST MAE: {:0.1f}, BEST MSE: {:0.1f}, BEST MODEL: {:s}'.format(best_mae,best_mse, best_model))
+        # log_text = 'BEST MAE: %0.1f, BEST MSE: %0.1f, BEST MODEL: %s' % (best_mae,best_mse, best_model)
+        # log_print(log_text, color='green', attrs=['bold'])
         if use_tensorboard:
             exp.add_scalar_value('MAE', mae, step=epoch)
             exp.add_scalar_value('MSE', mse, step=epoch)

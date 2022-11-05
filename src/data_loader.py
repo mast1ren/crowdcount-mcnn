@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import os
 import random
-import pandas as pd
+# import pandas as pd
 import json
 import h5py
 
@@ -16,10 +16,11 @@ class ImageDataLoader():
 
         with open(data_path, 'r') as f:
             self.data_files = json.load(f)
-
+        self.data_files = [os.path.join(os.path.dirname(data_path), f) for f in self.data_files]
         # self.data_files = [filename for filename in os.listdir(data_path) \
         #                    if os.path.isfile(os.path.join(data_path,filename))]
         self.data_files.sort()
+        # print(self.data_files)
         self.shuffle = shuffle
         if shuffle:
             random.seed(2468)
@@ -33,7 +34,8 @@ class ImageDataLoader():
             for fname in self.data_files:
                 
                 # img = cv2.imread(os.path.join(self.data_path,fname),0)
-                img = cv2.imread(fname,0)
+                img = cv2.imread(fname)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = img.astype(np.float32, copy=False)
                 ht = img.shape[0]
                 wd = img.shape[1]
@@ -42,6 +44,8 @@ class ImageDataLoader():
                 img = cv2.resize(img,(wd_1,ht_1))
                 img = img.reshape((1,1,img.shape[0],img.shape[1]))
                 den = h5py.File(fname.replace('data', 'annotation').replace('jpg', 'h5'), 'r')['density'][:]
+                den = cv2.resize(den, (den.shape[1]*2, den.shape[0]*2), interpolation=cv2.INTER_CUBIC)//4
+
                 # den = pd.read_csv(os.path.join(self.gt_path,os.path.splitext(fname)[0] + '.csv'), sep=',',header=None).as_matrix()                        
                 den  = den.astype(np.float32, copy=False)
                 if self.gt_downsample:
@@ -82,25 +86,26 @@ class ImageDataLoader():
             else:                    
                 fname = files[idx]
                 # img = cv2.imread(os.path.join(self.data_path,fname),0)
-                img = cv2.imread(fname,0)
+                img = cv2.imread(fname)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 img = img.astype(np.float32, copy=False)
                 ht = img.shape[0]
                 wd = img.shape[1]
-                ht_1 = (ht/4)*4
-                wd_1 = (wd/4)*4
+                ht_1 = int((ht/4)*4)
+                wd_1 = int((wd/4)*4)
                 img = cv2.resize(img,(wd_1,ht_1))
+                # print(img.shape)
                 img = img.reshape((1,1,img.shape[0],img.shape[1]))
                 den = h5py.File(fname.replace('data', 'annotation').replace('jpg', 'h5'), 'r')['density'][:]
+                den = cv2.resize(den, (den.shape[1]*2, den.shape[0]*2), interpolation=cv2.INTER_CUBIC)//4
                 # den = pd.read_csv(os.path.join(self.gt_path,os.path.splitext(fname)[0] + '.csv'), sep=',',header=None).as_matrix()                        
                 den  = den.astype(np.float32, copy=False)
                 if self.gt_downsample:
-                    wd_1 = wd_1/4
-                    ht_1 = ht_1/4
-                    den = cv2.resize(den,(wd_1,ht_1))                
-                    den = den * ((wd*ht)/(wd_1*ht_1))
+                    wd_1 = int(wd_1/4)
+                    ht_1 = int(ht_1/4)
+                    den = cv2.resize(den,(wd_1,ht_1)) * ((wd*ht)/(wd_1*ht_1))
                 else:
-                    den = cv2.resize(den,(wd_1,ht_1))
-                    den = den * ((wd*ht)/(wd_1*ht_1))
+                    den = cv2.resize(den,(wd_1,ht_1)) * ((wd*ht)/(wd_1*ht_1))
                     
                 den = den.reshape((1,1,den.shape[0],den.shape[1]))            
                 blob = {}
