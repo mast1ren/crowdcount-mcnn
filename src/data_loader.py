@@ -96,7 +96,8 @@ class ImageDataLoader():
                 # img = cv2.resize(img,(wd_1,ht_1))
                 # print(img.shape)
                 img = img.reshape((1,1,img.shape[0],img.shape[1]))
-                den = h5py.File(fname.replace('data', 'annotation').replace('jpg', 'h5'), 'r')['density'][:]
+                den_path = os.path.join(os.path.dirname(fname).replace('images', 'ground_truth'), 'GT_'+os.path.basename(fname).replace('.jpg', '.h5'))
+                den = h5py.File(den_path, 'r')['density'][:]
                 # print(np.sum(den))
                 # den = pd.read_csv(os.path.join(self.gt_path,os.path.splitext(fname)[0] + '.csv'), sep=',',header=None).as_matrix()                        
                 # den  = den.astype(np.float32, copy=False)

@@ -79,8 +79,8 @@ mse = 0.0
 
 #load test data
 data_loader = ImageDataLoader(os.path.join('../../ds/dronebird', 'test.json'), shuffle=False, gt_downsample=True, pre_load=False)
-preds = [[] for i in range(11)]
-gts = [[] for i in range(11)]
+preds = [[] for i in range(10)]
+gts = [[] for i in range(10)]
 i=0
 for blob in data_loader:                        
     im_data = blob['data']
@@ -94,7 +94,7 @@ for blob in data_loader:
     density_map = density_map.data.cpu().numpy()
     gt_count = np.sum(gt_data)
     et_count = np.sum(density_map)
-    count = ['crowded' if gt_count > 150 else 'sparse']
+    count = 'crowded' if gt_count > 150 else 'sparse'
     pred_e = et_count
     gt_e = gt_count
     if light == 'sunny':
@@ -103,33 +103,30 @@ for blob in data_loader:
     elif light == 'backlight':
         preds[1].append(pred_e)
         gts[1].append(gt_e)
-    else:
+    if count == 'crowded':
         preds[2].append(pred_e)
         gts[2].append(gt_e)
-    if count == 'crowded':
+    else:
         preds[3].append(pred_e)
         gts[3].append(gt_e)
-    else:
+    if angle == '60':
         preds[4].append(pred_e)
         gts[4].append(gt_e)
-    if angle == '60':
+    else:
         preds[5].append(pred_e)
         gts[5].append(gt_e)
-    else:
+    if bird == 'stand':
         preds[6].append(pred_e)
         gts[6].append(gt_e)
-    if bird == 'stand':
+    else:
         preds[7].append(pred_e)
         gts[7].append(gt_e)
-    else:
+    if size == 'small':
         preds[8].append(pred_e)
         gts[8].append(gt_e)
-    if size == 'small':
+    else:
         preds[9].append(pred_e)
         gts[9].append(gt_e)
-    else:
-        preds[10].append(pred_e)
-        gts[10].append(gt_e)
 
     mae += abs(gt_count-et_count)
     mse += ((gt_count-et_count)*(gt_count-et_count))
@@ -147,7 +144,7 @@ print('MAE: {:0.2f}, MSE: {:0.2f}'.format(mae,mse))
 # f = open(file_results, 'w') 
 # f.write('MAE: %0.2f, MSE: %0.2f' % (mae,mse))
 # f.close()
-attri = ['sunny', 'backlight', 'cloudy', 'crowded', 'sparse', '60', '90', 'stand', 'fly', 'small', 'mid']
+attri = ['sunny', 'backlight', 'crowded', 'sparse', '60', '90', 'stand', 'fly', 'small', 'mid']
 for i in range(11):
     if len(preds[i]) == 0:
         continue
