@@ -86,7 +86,7 @@ for blob in data_loader:
     im_data = blob['data']
     gt_data = blob['gt_density']
     img_path = blob['fname']
-    seq = img_path.split('/')[-3]
+    seq = img_path[3:6]
     light, angle, bird, size = get_seq_class(seq, 'test')
 
 
