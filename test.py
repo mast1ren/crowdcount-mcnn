@@ -55,7 +55,7 @@ save_output = False
 
 data_path =  './data/original/shanghaitech/part_B_final/test_data/images/'
 gt_path = './data/original/shanghaitech/part_B_final/test_data/ground_truth_csv/'
-model_path = './saved_models/mcnn_dronebirds_10.h5'
+model_path = './saved_models/mcnn_dronebirds_14.h5'
 
 output_dir = './output/'
 model_name = os.path.basename(model_path).split('.')[0]
@@ -79,14 +79,15 @@ mse = 0.0
 
 #load test data
 data_loader = ImageDataLoader(os.path.join('../../ds/dronebird', 'test.json'), shuffle=False, gt_downsample=True, pre_load=False)
-preds = [[] for i in range(10)]
-gts = [[] for i in range(10)]
+preds = [[] for i in range(8)]
+gts = [[] for i in range(8)]
 i=0
 for blob in data_loader:                        
     im_data = blob['data']
     gt_data = blob['gt_density']
     img_path = blob['fname']
-    seq = img_path[3:6]
+    seq = int(os.path.basename(img_path)[3:6])
+    seq = 'DJI_' + str(seq).zfill(4)
     light, angle, bird, size = get_seq_class(seq, 'test')
 
 
@@ -94,7 +95,7 @@ for blob in data_loader:
     density_map = density_map.data.cpu().numpy()
     gt_count = np.sum(gt_data)
     et_count = np.sum(density_map)
-    count = 'crowded' if gt_count > 150 else 'sparse'
+    # count = 'crowded' if gt_count > 150 else 'sparse'
     pred_e = et_count
     gt_e = gt_count
     if light == 'sunny':
@@ -103,30 +104,30 @@ for blob in data_loader:
     elif light == 'backlight':
         preds[1].append(pred_e)
         gts[1].append(gt_e)
-    if count == 'crowded':
+    # if count == 'crowded':
+    #     preds[2].append(pred_e)
+    #     gts[2].append(gt_e)
+    # else:
+        # preds[3].append(pred_e)
+        # gts[3].append(gt_e)
+    if angle == '60':
         preds[2].append(pred_e)
         gts[2].append(gt_e)
     else:
         preds[3].append(pred_e)
         gts[3].append(gt_e)
-    if angle == '60':
+    if bird == 'stand':
         preds[4].append(pred_e)
         gts[4].append(gt_e)
     else:
         preds[5].append(pred_e)
         gts[5].append(gt_e)
-    if bird == 'stand':
+    if size == 'small':
         preds[6].append(pred_e)
         gts[6].append(gt_e)
     else:
         preds[7].append(pred_e)
         gts[7].append(gt_e)
-    if size == 'small':
-        preds[8].append(pred_e)
-        gts[8].append(gt_e)
-    else:
-        preds[9].append(pred_e)
-        gts[9].append(gt_e)
 
     mae += abs(gt_count-et_count)
     mse += ((gt_count-et_count)*(gt_count-et_count))
@@ -139,13 +140,16 @@ for blob in data_loader:
 print() 
 mae = mae/data_loader.get_num_samples()
 mse = np.sqrt(mse/data_loader.get_num_samples())
-print('MAE: {:0.2f}, MSE: {:0.2f}'.format(mae,mse))
+with open(file_results, 'w') as f:
+    print('MAE: {:0.2f}, MSE: {:0.2f}'.format(mae,mse))
+    f.write('MAE: {:0.2f}, MSE: {:0.2f}\n'.format(mae,mse))
 
 # f = open(file_results, 'w') 
 # f.write('MAE: %0.2f, MSE: %0.2f' % (mae,mse))
 # f.close()
-attri = ['sunny', 'backlight', 'crowded', 'sparse', '60', '90', 'stand', 'fly', 'small', 'mid']
-for i in range(11):
-    if len(preds[i]) == 0:
-        continue
-    print('{}: MAE:{}. RMSE:{}.'.format(attri[i], mean_absolute_error(preds[i], gts[i]), np.sqrt(mean_squared_error(preds[i], gts[i]))))
+    attri = ['sunny', 'backlight', '60', '90', 'stand', 'fly', 'small', 'mid']
+    for i in range(8):
+        if len(preds[i]) == 0:
+            continue
+        print('{}: MAE:{}. RMSE:{}.'.format(attri[i], mean_absolute_error(preds[i], gts[i]), np.sqrt(mean_squared_error(preds[i], gts[i]))))
+        f.write('{}: MAE:{}. RMSE:{}.\n'.format(attri[i], mean_absolute_error(preds[i], gts[i]), np.sqrt(mean_squared_error(preds[i], gts[i]))))
