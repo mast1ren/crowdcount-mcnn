@@ -41,8 +41,8 @@ output_dir = './saved_models/'
 data_path = '../../ds/dronebird'
 
 #training configuration
-start_step = 0
-end_step = 2000
+start_step = 22
+end_step = 200
 lr = 0.00001
 momentum = 0.9
 disp_interval = 5
@@ -50,7 +50,7 @@ log_interval = 250
 
 
 #Tensorboard  config
-use_tensorboard = False
+use_tensorboard = True
 save_exp_name = method + '_' + dataset_name + '_' + 'v1'
 remove_all_log = False   # remove all historical experiments in TensorBoard
 exp_name = None # the previous experiment name in TensorBoard
@@ -61,11 +61,15 @@ if rand_seed is not None:
     np.random.seed(rand_seed)
     torch.manual_seed(rand_seed)
     torch.cuda.manual_seed(rand_seed)
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 device = torch.device("cuda:0")
 # load net
+    
 net = CrowdCounter()
 network.weights_normal_init(net, dev=0.01)
+if start_step != 0:
+    trained_model = os.path.join('./saved_models/mcnn_dronebirds_' + str(start_step) + '.h5')
+    network.load_net(trained_model, net)
 net.to(device)
 net.train()
 

@@ -9,9 +9,10 @@ from src.data_loader import ImageDataLoader
 from src import utils
 
 from sklearn.metrics import mean_squared_error,mean_absolute_error
+import scipy.io as sio
 
 def get_seq_class(seq, set):
-    backlight = ['DJI_0021', 'DJI_0032', 'DJI_0202', 'DJI_0339', 'DJI_0340']
+    backlight = ['DJI_0021','DJI_0022', 'DJI_0032', 'DJI_0202', 'DJI_0339', 'DJI_0340']
     cloudy = ['DJI_0519', 'DJI_0554']
     
     # uhd = ['DJI_0332', 'DJI_0334', 'DJI_0339', 'DJI_0340', 'DJI_0342', 'DJI_0343', 'DJI_345', 'DJI_0348', 'DJI_0519', 'DJI_0544']
@@ -41,12 +42,12 @@ def get_seq_class(seq, set):
     # if seq in uhd:
     #     resolution = 'uhd'
     
-    # count = 'sparse'
-    # loca = sio.loadmat(os.path.join(set, seq, 'annotation/000000.mat'))['locations']
-    # if loca.shape[0] > 150:
-    #     count = 'crowded'
+    count = 'sparse'
+    loca = sio.loadmat(os.path.join('../../ds/dronebird/', set, 'ground_truth', 'GT_img'+str(seq[-3:])+'000.mat'))['locations']
+    if loca.shape[0] > 150:
+        count = 'crowded'
     # return light, resolution, count
-    return light, angle, bird, size
+    return light, angle, bird, size, count
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = False
@@ -66,7 +67,7 @@ output_dir = os.path.join(output_dir, 'density_maps_' + model_name)
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 device = torch.device("cuda:0")
 net = CrowdCounter()
       
@@ -79,8 +80,8 @@ mse = 0.0
 
 #load test data
 data_loader = ImageDataLoader(os.path.join('../../ds/dronebird', 'test.json'), shuffle=False, gt_downsample=True, pre_load=False)
-preds = [[] for i in range(8)]
-gts = [[] for i in range(8)]
+preds = [[] for i in range(10)]
+gts = [[] for i in range(10)]
 i=0
 for blob in data_loader:                        
     im_data = blob['data']
@@ -88,7 +89,7 @@ for blob in data_loader:
     img_path = blob['fname']
     seq = int(os.path.basename(img_path)[3:6])
     seq = 'DJI_' + str(seq).zfill(4)
-    light, angle, bird, size = get_seq_class(seq, 'test')
+    light, angle, bird, size, count = get_seq_class(seq, 'test')
 
 
     density_map = net(im_data, gt_data)
@@ -104,30 +105,30 @@ for blob in data_loader:
     elif light == 'backlight':
         preds[1].append(pred_e)
         gts[1].append(gt_e)
-    # if count == 'crowded':
-    #     preds[2].append(pred_e)
-    #     gts[2].append(gt_e)
-    # else:
-        # preds[3].append(pred_e)
-        # gts[3].append(gt_e)
-    if angle == '60':
+    if count == 'crowded':
         preds[2].append(pred_e)
         gts[2].append(gt_e)
     else:
         preds[3].append(pred_e)
         gts[3].append(gt_e)
-    if bird == 'stand':
+    if angle == '60':
         preds[4].append(pred_e)
         gts[4].append(gt_e)
     else:
         preds[5].append(pred_e)
         gts[5].append(gt_e)
-    if size == 'small':
+    if bird == 'stand':
         preds[6].append(pred_e)
         gts[6].append(gt_e)
     else:
         preds[7].append(pred_e)
         gts[7].append(gt_e)
+    if size == 'small':
+        preds[8].append(pred_e)
+        gts[8].append(gt_e)
+    else:
+        preds[9].append(pred_e)
+        gts[9].append(gt_e)
 
     mae += abs(gt_count-et_count)
     mse += ((gt_count-et_count)*(gt_count-et_count))
@@ -147,8 +148,8 @@ with open(file_results, 'w') as f:
 # f = open(file_results, 'w') 
 # f.write('MAE: %0.2f, MSE: %0.2f' % (mae,mse))
 # f.close()
-    attri = ['sunny', 'backlight', '60', '90', 'stand', 'fly', 'small', 'mid']
-    for i in range(8):
+    attri = ['sunny', 'backlight','crowded', 'sparse', '60', '90', 'stand', 'fly', 'small', 'mid']
+    for i in range(10):
         if len(preds[i]) == 0:
             continue
         print('{}: MAE:{}. RMSE:{}.'.format(attri[i], mean_absolute_error(preds[i], gts[i]), np.sqrt(mean_squared_error(preds[i], gts[i]))))
